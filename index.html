@@ -1,3 +1,4 @@
+```html
 <!doctype html>
 <html lang="en">
 <head>
@@ -34,22 +35,30 @@
 <body>
 <div class="chat">
   <header>
-    <h1>{{COMPANY}} - {{BOT_NAME}}</h1>
+    <h1>Tens Sourcing - {{BOT_NAME}}</h1>
     <p>Ask about leave, office timings, HR and IT</p>
+    <p>Office Hours: Monday to Friday, 9:30 AM – 6:30 PM</p>
   </header>
   <div id="log"></div>
   <div class="chips" id="chips">
-    <button class="chip" data-q="I need to apply for leave">Leave request</button>
-    <button class="chip" data-q="What are the office timings?">Office timings</button>
+    <button class="chip" data-q="I need to apply for leave">Leave Request</button>
+    <button class="chip" data-q="What are the office timings?">Office Timings</button>
     <button class="chip" data-q="Salary question">Salary</button>
     <button class="chip" data-q="WiFi password">WiFi</button>
-    <button class="chip" data-q="How do I contact HR?">HR</button>
+    <button class="chip" data-q="How do I contact HR?">HR Contact</button>
+    <button class="chip" data-q="I have another question. Please provide the contact email.">Other Questions</button>
   </div>
   <form id="form" autocomplete="off">
     <input id="input" placeholder="Type your question here..." maxlength="500">
     <button class="send" type="submit">Send</button>
   </form>
-  <footer>Demo bot &middot; <a href="/leaves" target="_blank">View leave requests</a></footer>
+  <footer>
+    Tens Sourcing &middot; Demo bot &middot;
+    <a href="/leaves" target="_blank">View Leave Requests</a>
+    <br>
+    For other questions, contact
+    <a href="mailto:sehrish.hanif@tenssourcing.com">Sehrish Hanif</a>
+  </footer>
 </div>
 
 <script>
@@ -88,7 +97,7 @@
       add(j.reply, "bot");
     } catch (e) {
       t.remove();
-      add("Could not reach the server. Please try again.", "bot");
+      add("Could not reach the server. For other questions, please contact Sehrish Hanif at sehrish.hanif@tenssourcing.com.", "bot");
     }
   }
 
@@ -105,3 +114,4 @@
 </script>
 </body>
 </html>
+```
