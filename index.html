@@ -14,7 +14,7 @@
           flex-direction:column; border-radius:16px; overflow:hidden; box-shadow:0 10px 40px rgba(31,58,138,.18); }
   header { background:linear-gradient(135deg,var(--blue),var(--blue2)); color:#fff; padding:16px 18px; }
   header h1 { margin:0; font-size:18px; }
-  header p { margin:2px 0 0; font-size:12px; opacity:.85; }
+  header p { margin:4px 0 0; font-size:12px; opacity:.9; }
   #log { flex:1; overflow-y:auto; padding:16px; background:var(--bg); display:flex; flex-direction:column; gap:10px; }
   .msg { max-width:82%; padding:10px 14px; border-radius:16px; font-size:15px; line-height:1.45; white-space:pre-wrap; word-wrap:break-word; }
   .bot { background:var(--bot); align-self:flex-start; border-bottom-left-radius:4px; box-shadow:0 1px 2px rgba(0,0,0,.08); }
@@ -24,12 +24,12 @@
           font-size:13px; cursor:pointer; }
   .chip:hover { background:var(--blue2); color:#fff; }
   form { display:flex; gap:8px; padding:12px; border-top:1px solid #e3e7f1; background:#fff; }
-  input { flex:1; padding:12px 14px; border:1px solid #ccd3e4; border-radius:24px; font-size:15px; outline:none; }
+  input { flex:1; min-width:0; padding:12px 14px; border:1px solid #ccd3e4; border-radius:24px; font-size:15px; outline:none; }
   input:focus { border-color:var(--blue2); }
   button.send { background:var(--blue2); color:#fff; border:0; border-radius:24px; padding:0 20px; font-size:15px; cursor:pointer; }
   .typing { color:#8a93ad; font-size:13px; align-self:flex-start; }
-  footer { text-align:center; font-size:11px; color:#8a93ad; padding:6px; background:#fff; }
-  footer a { color:#8a93ad; }
+  footer { text-align:center; font-size:11px; color:#8a93ad; padding:8px; background:#fff; }
+  footer a { color:var(--blue2); }
 </style>
 </head>
 <body>
@@ -39,24 +39,28 @@
     <p>Ask about leave, office timings, HR and IT</p>
     <p>Office Hours: Monday to Friday, 9:30 AM – 6:30 PM</p>
   </header>
+
   <div id="log"></div>
+
   <div class="chips" id="chips">
     <button class="chip" data-q="I need to apply for leave">Leave Request</button>
     <button class="chip" data-q="What are the office timings?">Office Timings</button>
     <button class="chip" data-q="Salary question">Salary</button>
     <button class="chip" data-q="WiFi password">WiFi</button>
-    <button class="chip" data-q="How do I contact HR?">HR Contact</button>
-    <button class="chip" data-q="I have another question. Please provide the contact email.">Other Questions</button>
+    <button class="chip" data-q="How do I contact HR?">HR</button>
+    <button class="chip" data-q="Who should I contact for other questions?">Other Questions</button>
   </div>
+
   <form id="form" autocomplete="off">
     <input id="input" placeholder="Type your question here..." maxlength="500">
     <button class="send" type="submit">Send</button>
   </form>
+
   <footer>
-    Tens Sourcing &middot; Demo bot &middot;
+    Tens Sourcing &middot;
     <a href="/leaves" target="_blank">View Leave Requests</a>
     <br>
-    For other questions, contact
+    Other questions:
     <a href="mailto:sehrish.hanif@tenssourcing.com">Sehrish Hanif</a>
   </footer>
 </div>
@@ -65,8 +69,10 @@
   const log = document.getElementById("log");
   const form = document.getElementById("form");
   const input = document.getElementById("input");
+
   let session = "";
   try { session = sessionStorage.getItem("sid") || ""; } catch (e) {}
+
   if (!session) {
     session = Math.random().toString(36).slice(2) + Date.now().toString(36);
     try { sessionStorage.setItem("sid", session); } catch (e) {}
@@ -80,24 +86,86 @@
     log.scrollTop = log.scrollHeight;
   }
 
+  function normalize(text) {
+    return text.toLowerCase().replace(/[^\w\s]/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  function localAnswer(text) {
+    const q = normalize(text);
+
+    const timingQuestion =
+      q.includes("office timing") ||
+      q.includes("office hour") ||
+      q.includes("working hour") ||
+      q.includes("work timing") ||
+      q.includes("when does the office") ||
+      q.includes("what time does the office") ||
+      q === "timings" ||
+      q === "timing";
+
+    if (timingQuestion) {
+      return "Tens Sourcing office hours are Monday to Friday, 9:30 AM to 6:30 PM. The office is closed on Saturday and Sunday.";
+    }
+
+    const contactQuestion =
+      q.includes("sehrish") ||
+      q.includes("contact hr") ||
+      q.includes("hr email") ||
+      q.includes("contact email") ||
+      q.includes("other question") ||
+      q.includes("other query") ||
+      q.includes("who should i contact") ||
+      q.includes("who do i contact") ||
+      q.includes("email address");
+
+    if (contactQuestion) {
+      return "For other questions or assistance, please contact Sehrish Hanif at sehrish.hanif@tenssourcing.com.";
+    }
+
+    return null;
+  }
+
   async function send(text) {
     if (!text.trim()) return;
+
     add(text, "me");
+
+    const answer = localAnswer(text);
+    if (answer !== null) {
+      add(answer, "bot");
+      return;
+    }
+
     const t = document.createElement("div");
-    t.className = "typing"; t.textContent = "typing...";
-    log.appendChild(t); log.scrollTop = log.scrollHeight;
+    t.className = "typing";
+    t.textContent = "Typing...";
+    log.appendChild(t);
+    log.scrollTop = log.scrollHeight;
+
     try {
       const r = await fetch("/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ session, message: text })
       });
+
+      if (!r.ok) throw new Error("Server request failed");
+
       const j = await r.json();
       t.remove();
-      add(j.reply, "bot");
+
+      add(
+        typeof j.reply === "string"
+          ? j.reply
+          : "I could not process that response. Please try again.",
+        "bot"
+      );
     } catch (e) {
       t.remove();
-      add("Could not reach the server. For other questions, please contact Sehrish Hanif at sehrish.hanif@tenssourcing.com.", "bot");
+      add(
+        "I could not connect to the assistant. Please try again or contact Sehrish Hanif at sehrish.hanif@tenssourcing.com.",
+        "bot"
+      );
     }
   }
 
@@ -107,8 +175,10 @@
     input.value = "";
     send(v);
   });
+
   document.querySelectorAll(".chip").forEach(c =>
-    c.addEventListener("click", () => send(c.dataset.q)));
+    c.addEventListener("click", () => send(c.dataset.q))
+  );
 
   send("menu");
 </script>
